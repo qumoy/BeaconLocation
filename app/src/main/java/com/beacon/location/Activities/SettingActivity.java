@@ -65,14 +65,14 @@ public class SettingActivity extends AppCompatActivity {
         setContentView(R.layout.activity_setting);
         ButterKnife.bind(this);
         sp = getSharedPreferences(BEACON_DATA, MODE_PRIVATE);
-        mEdBeaconOneX.setText(String.valueOf(sp.getInt(BEACON_ONE_X, 100)));
-        mEdBeaconOneY.setText(String.valueOf(sp.getInt(BEACON_ONE_Y, 100)));
-        mEdBeaconTwoX.setText(String.valueOf(sp.getInt(BEACON_TWO_X, 1000)));
-        mEdBeaconTwoY.setText(String.valueOf(sp.getInt(BEACON_TWO_Y, 100)));
-        mEdBeaconThreeX.setText(String.valueOf(sp.getInt(BEACON_THREE_X, 100)));
-        mEdBeaconThreeY.setText(String.valueOf(sp.getInt(BEACON_THREE_Y, 1000)));
-        mEdBeaconFourX.setText(String.valueOf(sp.getInt(BEACON_FOUR_X, 1000)));
-        mEdBeaconFourY.setText(String.valueOf(sp.getInt(BEACON_FOUR_Y, 1000)));
+        mEdBeaconOneX.setText(String.valueOf(sp.getInt(BEACON_ONE_X, 250)));
+        mEdBeaconOneY.setText(String.valueOf(sp.getInt(BEACON_ONE_Y, 250)));
+        mEdBeaconTwoX.setText(String.valueOf(sp.getInt(BEACON_TWO_X, 750)));
+        mEdBeaconTwoY.setText(String.valueOf(sp.getInt(BEACON_TWO_Y, 250)));
+        mEdBeaconThreeX.setText(String.valueOf(sp.getInt(BEACON_THREE_X, 250)));
+        mEdBeaconThreeY.setText(String.valueOf(sp.getInt(BEACON_THREE_Y, 750)));
+        mEdBeaconFourX.setText(String.valueOf(sp.getInt(BEACON_FOUR_X, 750)));
+        mEdBeaconFourY.setText(String.valueOf(sp.getInt(BEACON_FOUR_Y, 750)));
     }
 
     @OnClick({R.id.btn_comfirm, R.id.btn_setting_reset})
@@ -99,14 +99,14 @@ public class SettingActivity extends AppCompatActivity {
             }
         }
         if (v.getId() == R.id.btn_setting_reset) {
-            mEdBeaconOneX.setText(String.valueOf(100));
-            mEdBeaconOneY.setText(String.valueOf(100));
-            mEdBeaconTwoX.setText(String.valueOf(1000));
-            mEdBeaconTwoY.setText(String.valueOf(100));
-            mEdBeaconThreeX.setText(String.valueOf(100));
-            mEdBeaconThreeY.setText(String.valueOf(1000));
-            mEdBeaconFourX.setText(String.valueOf(1000));
-            mEdBeaconFourY.setText(String.valueOf(1000));
+            mEdBeaconOneX.setText(String.valueOf(250));
+            mEdBeaconOneY.setText(String.valueOf(250));
+            mEdBeaconTwoX.setText(String.valueOf(750));
+            mEdBeaconTwoY.setText(String.valueOf(250));
+            mEdBeaconThreeX.setText(String.valueOf(250));
+            mEdBeaconThreeY.setText(String.valueOf(750));
+            mEdBeaconFourX.setText(String.valueOf(750));
+            mEdBeaconFourY.setText(String.valueOf(750));
             edit.putInt(BEACON_ONE_X, Integer.parseInt(mEdBeaconOneX.getText().toString()));
             edit.putInt(BEACON_ONE_Y, Integer.parseInt(mEdBeaconOneY.getText().toString()));
             edit.putInt(BEACON_TWO_X, Integer.parseInt(mEdBeaconTwoX.getText().toString()));

@@ -1,7 +1,6 @@
 package com.beacon.location.Beans;
 
 
-
 /**
  * 存储两交点，并求出距离存入distance
  */
@@ -12,11 +11,6 @@ public class Cross_pos_and_dist {
     private double pos_x2=-1;
     private double pos_y2=-1;
     private double distance=9999;
-
-    Cross_pos_and_dist()
-    {
-
-    }
 
     public Cross_pos_and_dist(Circle_intersection_pos A, Circle_intersection_pos B)
     {

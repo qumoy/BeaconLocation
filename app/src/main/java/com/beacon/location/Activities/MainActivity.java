@@ -87,15 +87,14 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
     private TextView show_Coordinate;
     private LinearLayout llLayout;
-    private String put_color = "RED";
     private Paint p = new Paint();
     private DrawView view;
-
     private Beacon_circle circle_1;
     private Beacon_circle circle_2;
     private Beacon_circle circle_3;
     private Beacon_circle circle_4;
     private Positioning_engine engine = new Positioning_engine();
+    private Button btn_get_serarch;
     private Button btn_get_position;
     private Button btn_reset;
     private boolean stop_positioning = true;
@@ -111,29 +110,92 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private List<Beacon> mBeaconList = new ArrayList<>();
     private BeaconViewAdapter mBeaconViewAdapter;
 
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        mPermissionHelper = new PermissionHelper(this, this);
+        requestCode = 1;
+        mPermissionHelper.requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION});
+        //初始化蓝牙
+        for (int i = 0; i < beacon_number + 1; i++) {
+            myIbeacon[i] = new Beacon("Beacon_999", "error", 1, -999, -59, -999, 9999);//第一个数组位置不用，从索引值为1开始
+        }
+
+        Log.v("=====>", "Start onCreate");
+
+        llLayout = findViewById(R.id.map);
+        show_Coordinate = findViewById(R.id.show_Coordinate);
+        btn_get_serarch = findViewById(R.id.btn_search);  //搜索设备
+        btn_get_position = findViewById(R.id.btn_position);  //获取位置
+        btn_reset = findViewById(R.id.btn_reset); //复位
+        mRc = findViewById(R.id.rc);
+
+        //注册监听器
+        llLayout.setOnTouchListener(this);
+        btn_get_serarch.setOnClickListener(this);
+        btn_get_position.setOnClickListener(this);
+        btn_reset.setOnClickListener(this);
+
+        initRecyclerView();
+
+        initBluetooth();
+    }
+
+    /**
+     * 初始化蓝牙
+     * 若系统蓝牙未打开提示打开蓝牙
+     */
+    private void initBluetooth() {
+        BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        mBluetoothAdapter = bluetoothManager.getAdapter();
+        if (mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()) {
+            Intent enableBluetooth = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableBluetooth, REQUEST_ENABLE_BT);
+            return;
+        }
+    }
+
+    /**
+     * 初始化Recyclerview
+     */
+    @SuppressLint("WrongConstant")
+    private void initRecyclerView() {
+        mBeaconViewAdapter = new BeaconViewAdapter(mBeaconList);
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
+        linearLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
+        mRc.setLayoutManager(linearLayoutManager);
+        mRc.setAdapter(mBeaconViewAdapter);
+    }
+
+    /**
+     * 刷新RecyclerView中的列表数据
+     */
+    private void notifyDataSetChanged() {
+        if (mBeaconViewAdapter == null) {
+            mBeaconViewAdapter = new BeaconViewAdapter(mBeaconList);
+            mRc.setAdapter(mBeaconViewAdapter);
+        }
+        mBeaconViewAdapter.notifyDataSetChanged();
+    }
+
     /**
      * 打开蓝牙并扫描
      */
     public void find_beacon() {
-        //final BluetoothAdapter mBluetoothAdapter;
-        BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-        mBluetoothAdapter = bluetoothManager.getAdapter();
         mBluetoothAdapter.startLeScan(mLeScanCallback);
 
-        /**
-         * Checks if Bluetooth is enabled on device
-         * Use this within and Activity
-         */
         if (mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()) {
             Intent enableBluetooth = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBluetooth, REQUEST_ENABLE_BT);
             return;
         }
         /**
-         * 在1.1秒后停止扫描
+         * 在2秒后停止扫描
          */
-        Handler handler = new Handler();
-        handler.postDelayed(() -> mBluetoothAdapter.stopLeScan(mLeScanCallback), (2000));
+//        Handler handler = new Handler();
+//        handler.postDelayed(() -> mBluetoothAdapter.stopLeScan(mLeScanCallback), (5000));
     }
 
     /**
@@ -168,23 +230,16 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                     hexString.substring(16, 20) + "-" +
                     hexString.substring(20, 32);
 
-            // Major value
             major = (scanRecord[startByte + 20] & 0xff) * 0x100 + (scanRecord[startByte + 21] & 0xff);
-            // Minor value
-//            Log.e("=====>", "hexScanRecord: " + hexScanRecord);
             int result = (scanRecord[27 + 1] & 0xff) + (scanRecord[27] & 0xff) * 256;
-            Log.e("=====>", "result: " + result);
+            Log.e("test", "result: " + result);
             if (result == 481 || result == 482 || result == 483) {
                 minor = (scanRecord[27 + 1] & 0xff) + (scanRecord[27] & 0xff) * 256 - 480;//事先设备分别设为1,2,3,4,5
-//            minor = 1;//事先设备分别设为1,2,3,4,5
-                Log.e("=====>", "minor: " + minor + device.getAddress());
-
                 get_uuid = uuid;
                 get_rssi = rssi;
                 dist = calculateAccuracy(txPower, get_rssi);
                 Log.e("test", "minor:" + minor + "   dist: " + dist);
                 myIbeacon[minor] = new Beacon("Beacon_" + minor, uuid, major, minor, txPower, rssi, dist);  //给每个蓝牙设备赋值
-                //write(minor,myIbeacon[minor].get_rssi());//RSSI写入TXT文件
                 if (!deviceInfoExists("Beacon_" + minor)) {
                     mBeaconList.add(new Beacon("Beacon_" + minor, uuid, major, minor, txPower, rssi, dist));
                     notifyDataSetChanged();
@@ -194,14 +249,14 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                     beaconInfo.updateParameters(rssi, myIbeacon[minor].get_dist());
                     notifyDataSetChanged();
                 }
-                d[minor] = d[minor] + myIbeacon[minor].get_dist();     //便于后面简单求平均
+//                d[minor] = d[minor] + myIbeacon[minor].get_dist();     //便于后面简单求平均
+                d[minor] = myIbeacon[minor].get_dist();
                 totaltime[minor]++;//每个设备被扫描的次数
                 Log.v("=====>", "minor:" + minor);
-                Log.v("=====>", "totaltime" + minor + ";" + totaltime[minor]);
+                Log.v("totaltime", "totaltime" + minor + ";" + totaltime[minor]);
                 Log.v("=====>", "RSSI:" + myIbeacon[minor].get_rssi());
-                Log.v("=====>", "distance:" + myIbeacon[minor].get_dist());
+                Log.v("totaltime", "distance:" + myIbeacon[minor].get_dist());
             }
-
 
         }
     };
@@ -245,6 +300,13 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     }
 
     /**
+     *   首先是将rssi信号转换为距离：
+     *   d=10^((ABS(RSSI)-A)/(10*n))
+     *   其中d为距离，单位是m。
+     *   RSSI为rssi信号强度，为负数。
+     *   A为距离探测设备1m时的rssi值的绝对值，最佳范围在45-49之间。
+     *   n为环境衰减因子，需要测试矫正，最佳范围在3.25-4.5之间。
+     *
      * @param rssi
      * @return 主设备与从设备之间的距离dist
      */
@@ -252,62 +314,10 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         if (rssi == 0) {
             return -1.0;
         }
-        //RSSI=-9.297ln(d)-62.933>>>>
-        //RSSI=A*ln(d)+n
+//45  0.2
         double absRssi = Math.abs(rssi);
-        double power = (absRssi - 60) / (10 * 2);
+        double power = (absRssi - 65) / (10 * 4.8);
         return Math.pow(10, power);
-    }
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        mPermissionHelper = new PermissionHelper(this, this);
-        requestCode = 1;
-        mPermissionHelper.requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.WRITE_EXTERNAL_STORAGE});
-        //初始化蓝牙
-        for (int i = 0; i < beacon_number + 1; i++) {
-            myIbeacon[i] = new Beacon("Beacon_999", "error", 1, -999, -59, -999, 9999);//第一个数组位置不用，从索引值为1开始
-        }
-
-        Log.v("=====>", "Start onCreate");
-
-        llLayout = findViewById(R.id.map);
-        show_Coordinate = findViewById(R.id.show_Coordinate);
-        btn_get_position = findViewById(R.id.btn_position);  //获取位置
-        btn_reset = findViewById(R.id.btn_reset); //复位
-        mRc = findViewById(R.id.rc);
-
-        //注册监听器
-        llLayout.setOnTouchListener(this);
-        btn_get_position.setOnClickListener(this);
-        btn_reset.setOnClickListener(this);
-
-        initRecyclerView();
-    }
-
-    /**
-     * 初始化Recyclerview
-     */
-    @SuppressLint("WrongConstant")
-    private void initRecyclerView() {
-        mBeaconViewAdapter = new BeaconViewAdapter(mBeaconList);
-        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
-        linearLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
-        mRc.setLayoutManager(linearLayoutManager);
-        mRc.setAdapter(mBeaconViewAdapter);
-    }
-
-    /**
-     * 刷新RecyclerView中的列表数据
-     */
-    private void notifyDataSetChanged() {
-        if (mBeaconViewAdapter == null) {
-            mBeaconViewAdapter = new BeaconViewAdapter(mBeaconList);
-            mRc.setAdapter(mBeaconViewAdapter);
-        }
-        mBeaconViewAdapter.notifyDataSetChanged();
     }
 
     @Override
@@ -334,7 +344,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         put_beacon_and_user_on_map();
     }
 
-
     public void infinite_positioning() {
         while (stop_positioning == false) {
             stop_positioning = true;
@@ -346,7 +355,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 next_positioning = false;
 
                 //线程开启
-                mThread = new HandlerThread("find_beacons");  //HandlerThread
+                mThread = new HandlerThread("find_beacons");
                 mThread.start();
                 mThreadHandler = new Handler(mThread.getLooper());   //跳转另一个线程
                 mThreadHandler.post(get_user_pos);
@@ -354,12 +363,13 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         }
     }
 
-    //工作名 get_user 的工作內容
+    /**
+     * 开启Runnable获取用户位置
+     */
     private Runnable get_user_pos = () -> {
         Log.v("=====>", "Start get_user_pos");
-        find_beacon();   //寻找设备存入myIbeacon[minor]；
-        new Handler().postDelayed(() -> {
-            //   Log.v("=====>", "wait for 1.5 sec");
+
+        new Handler().post(() -> {
             // Beacon>2 开始定位
             int find_beacon_number = 0;
             for (int i = 0; i < (beacon_number + 1); i++) {
@@ -368,21 +378,20 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                     find_beacon_number++;
                 }
             }
+
             if (find_beacon_number > 2) {
                 Log.v("=====>", "start engine!");
                 for (int i = 1; i < 10; i++) {
                     if (totaltime[i] == 0) continue;
-                    d[i] = d[i] / totaltime[i];     //简单求平均
+//                    d[i] = d[i] / totaltime[i];     //简单求平均
                     myIbeacon[i].set_dist(d[i]);
-                    //  Log.v("=====>", "*********************mybeacon"+i+":"+myIbeacon[i].get_dist());
+                    Log.e("totaltime", "d[i]: "+d[i] );
                 }
-                Log.e("=====>", "myIbeacon： " + myIbeacon[1].get_minor() + myIbeacon[2].get_minor() + myIbeacon[3].get_minor());
                 engine.start_positioning(myIbeacon);//运用定位算法求出主设备X，Y坐标
                 Log.v("=====>", "user_pos_x:" + engine.get_user_pos().get_x());
                 Log.v("=====>", "user_pos_y:" + engine.get_user_pos().get_y());
                 user_pos_x = engine.get_user_pos().get_x();   //回调将主设备的坐标赋给user_pos_x
                 user_pos_y = engine.get_user_pos().get_y();
-
 
                 runOnUiThread(() -> {
                     put_beacon_and_user_on_map();
@@ -390,34 +399,33 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
                 });
                 //程序正常运行结束
-
             } else {
                 Toast.makeText(getApplicationContext(), "beacon少于3个!", Toast.LENGTH_SHORT).show();
             }
+//            循环定位
+//            next_positioning = true;//为下次一开始扫描初始化
+//            stop_positioning = false;
+//            for (int i = 0; i < 5; i++) {
+//                if (i == 0) {
+//                    d[i] = 999;
+//                    totaltime[i] = 999;
+//                } else {
+//                    d[i] = 0;
+//                    totaltime[i] = 0;
+//                }
+//            }
+//            for (int i = 0; i < 5; i++) {
+//
+//                if (i == 0) {
+//                    totaltime[i] = 999;
+//                } else {
+//                    totaltime[i] = 0;
+//                }
+//            }
+//            infinite_positioning();
+//            Log.v("=====>", "**************************标志位重置进行下一次扫描");
 
-            next_positioning = true;//为下次一开始扫描初始化
-            stop_positioning = false;
-            for (int i = 0; i < 5; i++) {
-                if (i == 0) {
-                    d[i] = 999;
-                    totaltime[i] = 999;
-                } else {
-                    d[i] = 0;
-                    totaltime[i] = 0;
-                }
-            }
-            for (int i = 0; i < 5; i++) {
-                if (i == 0) {
-                    totaltime[i] = 999;
-                } else {
-                    totaltime[i] = 0;
-                }
-            }
-            infinite_positioning();
-            Log.v("=====>", "**************************标志位重置进行下一次扫描");
-
-
-        }, (5000));
+        });
     };
 
 
@@ -443,8 +451,8 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
+    protected void onPause() {
+        super.onPause();
         //移除
         if (mThreadHandler != null) {
             mThreadHandler.removeCallbacks(get_user_pos);
@@ -455,9 +463,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         if (mThread != null) {
             mThread.quit();
             Log.v("=====>", "移除移除mThread!");
-
         }
-
     }
 
 
@@ -467,10 +473,13 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     public void onClick(View view) {
 
         switch (view.getId()) {
+            case R.id.btn_search:
+                find_beacon();   //寻找设备存入myIbeacon[minor]；
+                Toast.makeText(MainActivity.this, "正在搜索设备", Toast.LENGTH_SHORT).show();
+                break;
             case R.id.btn_position:
                 Log.v("=====>", "Start btn");
-                String text = "开始定位";
-                Toast.makeText(MainActivity.this, text, Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "开始定位", Toast.LENGTH_SHORT).show();
                 stop_positioning = false;
                 infinite_positioning();
                 break;
@@ -481,11 +490,9 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 conut_putted_beacons = 0;
                 Toast.makeText(this, "已清除", Toast.LENGTH_SHORT).show();
                 //复位。。。。
-
                 break;
 
         }
-
     }
 
     /**
@@ -498,7 +505,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         map_x = event.getX();    //得到界面点X、Y坐标
         map_y = event.getY();
         conut_putted_beacons++;//记录点击点数
-        show_Coordinate.setText("X: " + map_x / 1000 + ", Y: " + map_y / 1000);
+        show_Coordinate.setText("X: " + map_x / 500 + ", Y: " + map_y / 500);
 
         if (conut_putted_beacons == 1) {
             map_x_1 = map_x;
@@ -524,8 +531,8 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         Log.v("=====>", "Start put_beacon_and_user_on_map");
 
         view = new DrawView(this);
-        view.setMinimumHeight(1200);
-        view.setMinimumWidth(1080);
+        view.setMinimumHeight(1000);
+        view.setMinimumWidth(1000);
 
         view.invalidate();//此方法是在iu线程中使用，实现界面刷新。
         //view.postInvalidate();
@@ -549,10 +556,10 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             //绘制什么，由Canvas控制    如何绘制，由Paint控制
             // 建立初始畫布             //Paint p = new Paint();	前面已经命名了
             // 创建画笔
-            draw_user_and_beacon_position(put_color, canvas);
+            draw_user_and_beacon_position(canvas);
         }
 
-        private void draw_user_and_beacon_position(String color, Canvas canvas) {
+        private void draw_user_and_beacon_position(Canvas canvas) {
 
             p.setAntiAlias(true);                                    // 設置畫筆的锯齿效果。 true是去除。
 
@@ -601,12 +608,13 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         }
     }
 
+    @SuppressLint("SetTextI18n")
     public void draw_user(Canvas canvas) {
         if ((user_pos_x >= 0) && (user_pos_y >= 0)) {
             p.setColor(Color.RED);
             canvas.drawCircle((float) (user_pos_x), (float) (user_pos_y), 20, p);
             DecimalFormat df = new DecimalFormat("0.00");
-            show_Coordinate.setText("用户位置X: " + df.format(user_pos_x / 1000) + ", Y: " + df.format(user_pos_y / 1000));
+            show_Coordinate.setText("用户位置X: " + df.format(user_pos_x / 500) + ", Y: " + df.format(user_pos_y / 500));
         }
     }
 
@@ -650,42 +658,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 }).show();
             } else {
                 DialogUtil.showSelectDialog(MainActivity.this, "位置权限不可用", "请在-应用设置-权限中，允许APP使用位置权限", "取消", "立即开启", new DialogUtil.DialogClickListener() {
-                    @Override
-                    public void confirm() {
-                        goToAppSetting();
-                    }
-
-                    @Override
-                    public void cancel() {
-
-                    }
-                }).show();
-            }
-            if (!shouldShowRequestPermissionRationale(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-                DialogUtil.showSelectDialog(this, "说明", "需要使用写入权限，进行文件操作", "取消", "确定", new DialogUtil.DialogClickListener() {
-                    @Override
-                    public void confirm() {
-                        //用于在用户勾选“不再提示”并且拒绝时，再次提示用户
-                        DialogUtil.showSelectDialog(MainActivity.this, "写入权限不可用", "请在-应用设置-权限中，允许APP使用位置权限", "取消", "立即开启", new DialogUtil.DialogClickListener() {
-                            @Override
-                            public void confirm() {
-                                goToAppSetting();
-                            }
-
-                            @Override
-                            public void cancel() {
-
-                            }
-                        }).show();
-                    }
-
-                    @Override
-                    public void cancel() {
-
-                    }
-                }).show();
-            } else {
-                DialogUtil.showSelectDialog(MainActivity.this, "写入权限不可用", "请在-应用设置-权限中，允许APP使用位置权限", "取消", "立即开启", new DialogUtil.DialogClickListener() {
                     @Override
                     public void confirm() {
                         goToAppSetting();

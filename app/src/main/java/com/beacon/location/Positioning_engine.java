@@ -12,8 +12,8 @@ import java.util.Arrays;
 
 public class Positioning_engine {
 
-    private static int beacon_number = 4;
-    private Beacon[] myIbeacon = new Beacon[(beacon_number + 1)];//有4個 Beacon
+    private static int beacon_number = 3;
+    private Beacon[] myIbeacon = new Beacon[(beacon_number + 1)];//有3個 Beacon
     private Beacon_circle circle_1;   //存储三条最短的距离的设备
     private Beacon_circle circle_2;
     private Beacon_circle circle_3;
@@ -26,10 +26,6 @@ public class Positioning_engine {
     private Cross_pos_and_dist[] nearest_combine = new Cross_pos_and_dist[3];
     private Circle_intersection_pos critical_cross_point[] = new Circle_intersection_pos[3];
 
-
-    public Positioning_engine()//constructor
-    {
-    }
 
     public void set_circles(Beacon_circle circle1, Beacon_circle circle2, Beacon_circle circle3) {
         this.circles[0] = circle1;
@@ -46,7 +42,7 @@ public class Positioning_engine {
 
     public void start_positioning(Beacon[] ibeacon) {
         this.myIbeacon = ibeacon;
-        put_correct_radius_to_circles();   //将设备所求距离存储在响应设备里并缩小100
+        put_correct_radius_to_circles();   //将设备所求距离存储在响应设备里并扩大500倍
         Log.v("=====>", "put_correct_radius_to_circles() finish!");
         beacon_circle_sort(circles);     //将距离从小到大排序并将最短的前3个距离赋给sorted_circle_first3[]
         Log.v("=====>", "beacon_circle_sort(circles); finish!");
@@ -89,7 +85,7 @@ public class Positioning_engine {
         }
         //得到的距离扩大1000倍
         for (int i = 0; i < beacon_number; i++) {
-            this.circles[i].set_r((circles[i].get_r() * 1200));
+            this.circles[i].set_r((circles[i].get_r() * 500));
         }
     }
 

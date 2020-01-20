@@ -6,15 +6,10 @@
 
     <LinearLayout
         android:id="@+id/map"
-        android:layout_width="match_parent"
-        android:layout_height="388dp"
+        android:layout_width="333dp"
+        android:layout_height="333dp"
+        android:layout_gravity="center"
         android:background="@drawable/map"
-        android:orientation="vertical" />
-
-    <LinearLayout
-        android:id="@+id/map_canvas"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
         android:orientation="vertical" />
 
 
@@ -38,7 +33,12 @@
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal">
-
+        <Button
+            android:id="@+id/btn_search"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/text_start_search" />
         <Button
             android:id="@+id/btn_position"
             android:layout_width="0dp"

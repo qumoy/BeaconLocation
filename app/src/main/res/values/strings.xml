@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="text_user_location">用户位置：</string>
+    <string name="text_start_search">搜索设备</string>
 </resources>

@@ -10,15 +10,10 @@ public class Beacon_circle extends Circle_intersection_pos {
     private double radius=9999;
     private int minor=-1;
 
-    Beacon_circle()
-    {
-    }
-
     public Beacon_circle(double x, double y, int minor)
     {
         this.pos_x=x;
         this.pos_y=y;
-       // this.radius=r;
         this.minor=minor;
     }
 
@@ -47,7 +42,5 @@ public class Beacon_circle extends Circle_intersection_pos {
     {
         this.radius=r;
     }
-
-
 
 }
