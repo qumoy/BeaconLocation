@@ -1,0 +1,17 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context=".Activities.MainActivity">
+    <item
+        android:id="@+id/setting_add"
+        android:icon="@mipmap/add"
+        android:orderInCategory="100"
+        android:title="@string/setting_add"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/setting_delete"
+        android:icon="@mipmap/delete"
+        android:orderInCategory="100"
+        android:title="@string/setting_delete"
+        app:showAsAction="always" />
+</menu>

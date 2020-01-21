@@ -1,6 +1,14 @@
 package com.beacon.location.Beans;
 
-
+/**
+ * Author Qumoy
+ * Create Date 2020/1/18
+ * Description：
+ * Modifier:
+ * Modify Date:
+ * Bugzilla Id:
+ * Modify Content:
+ */
 /**
  * 存储两交点，并求出距离存入distance
  */

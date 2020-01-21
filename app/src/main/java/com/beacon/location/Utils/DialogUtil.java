@@ -4,6 +4,11 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import com.beacon.location.R;
@@ -56,17 +61,78 @@ public class DialogUtil {
 
     }
 
+    public interface BeaconDialogClickListener {
+
+        void change(int id, String str);
+
+        void add(Dialog view);
+
+        void back(Dialog view);
+    }
+
     /**
-     * 加载等待弹窗
+     * 加载添加Beacon弹窗
      */
-    public static Dialog showProgressDialog(Context context, String title) {
-        Dialog progressDialog = new Dialog(context, R.style.progress_dialog);
-        progressDialog.setContentView(R.layout.layout_progress_dialog);
-        progressDialog.setCancelable(false);
-        Objects.requireNonNull(progressDialog.getWindow()).setBackgroundDrawableResource(android.R.color.transparent);
-        TextView msg = progressDialog.findViewById(R.id.id_tv_loadingmsg);
-        msg.setText(title);
-        progressDialog.show();
-        return progressDialog;
+    public static Dialog showBeaconDialog(Context context, final BeaconDialogClickListener dialogClickListener) {
+        Dialog beaconDialog = new Dialog(context, R.style.progress_dialog);
+        beaconDialog.setContentView(R.layout.layout_beacon_dialog);
+        beaconDialog.setCancelable(false);
+        EditText mEdName = beaconDialog.findViewById(R.id.ed_beacon_name);
+        EditText mEdX = beaconDialog.findViewById(R.id.ed_beacon_x);
+        EditText mEdY = beaconDialog.findViewById(R.id.ed_beacon_y);
+        TextView mTvAdd = beaconDialog.findViewById(R.id.tv_add);
+        TextView mTvBack = beaconDialog.findViewById(R.id.tv_back);
+        mEdName.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                dialogClickListener.change(R.id.ed_beacon_name, editable.toString());
+            }
+        });
+        mEdX.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                dialogClickListener.change(R.id.ed_beacon_x, editable.toString());
+            }
+        });
+        mEdY.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                dialogClickListener.change(R.id.ed_beacon_y, editable.toString());
+            }
+        });
+        mTvAdd.setOnClickListener(view -> dialogClickListener.add(beaconDialog));
+        mTvBack.setOnClickListener(view -> dialogClickListener.back(beaconDialog));
+        beaconDialog.show();
+        return beaconDialog;
     }
 }

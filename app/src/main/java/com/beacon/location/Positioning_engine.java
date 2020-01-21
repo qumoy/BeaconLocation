@@ -1,7 +1,9 @@
 package com.beacon.location;
 
 
+import android.os.SystemClock;
 import android.util.Log;
+
 import com.beacon.location.Beans.Beacon;
 import com.beacon.location.Beans.Beacon_circle;
 import com.beacon.location.Beans.Circle_intersection_pos;
@@ -12,12 +14,12 @@ import java.util.Arrays;
 
 public class Positioning_engine {
 
-    private static int beacon_number = 3;
+    private static int beacon_number = 3;//三个Beacon
     private Beacon[] myIbeacon = new Beacon[(beacon_number + 1)];//有3個 Beacon
     private Beacon_circle circle_1;   //存储三条最短的距离的设备
     private Beacon_circle circle_2;
     private Beacon_circle circle_3;
-    private Beacon_circle[] circles = new Beacon_circle[4];
+    private Beacon_circle[] circles = new Beacon_circle[3];//三个Beacon
     Beacon_circle[] sorted_circle_first3 = new Beacon_circle[3];
     private Circle_intersection_pos sect_pos[] = new Circle_intersection_pos[6];    //存储三个最短路径圆的交点
     private Circle_intersection_pos last_time_sect_pos[] = new Circle_intersection_pos[6];
@@ -309,7 +311,7 @@ public class Positioning_engine {
 
     public void beacon_circle_sort(Beacon_circle[] values) {
 
-        double[] c = new double[4];
+        double[] c = new double[3];//三个Beacon
         if (values == null || values.length == 0) {
             Log.v("=====>", "**************values为空******************");
 

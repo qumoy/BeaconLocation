@@ -1,6 +1,14 @@
 package com.beacon.location.Beans;
 
-
+/**
+ * Author Qumoy
+ * Create Date 2020/1/18
+ * Description：
+ * Modifier:
+ * Modify Date:
+ * Bugzilla Id:
+ * Modify Content:
+ */
 /**
  * 包含蓝牙X、Y坐标，以及minor，以及距离radius
  */

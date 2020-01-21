@@ -2,11 +2,14 @@ package com.beacon.location.Activities;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Dialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -36,7 +39,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.beacon.location.Beans.Beacon;
 import com.beacon.location.Adapters.BeaconViewAdapter;
+import com.beacon.location.Beans.BeaconInfo;
 import com.beacon.location.Beans.Beacon_circle;
+import com.beacon.location.Dbs.SqlHelper;
 import com.beacon.location.Utils.DialogUtil;
 import com.beacon.location.Utils.PermissionHelper;
 import com.beacon.location.Utils.PermissionInterface;
@@ -57,6 +62,15 @@ import static com.beacon.location.Activities.SettingActivity.BEACON_THREE_Y;
 import static com.beacon.location.Activities.SettingActivity.BEACON_TWO_X;
 import static com.beacon.location.Activities.SettingActivity.BEACON_TWO_Y;
 
+/**
+ * Author Qumoy
+ * Create Date 2020/1/28
+ * Description：
+ * Modifier:
+ * Modify Date:
+ * Bugzilla Id:
+ * Modify Content:
+ */
 public class MainActivity extends AppCompatActivity implements View.OnTouchListener, View.OnClickListener, PermissionInterface {
 
     private static int beacon_number = 4;
@@ -117,7 +131,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         setContentView(R.layout.activity_main);
         mPermissionHelper = new PermissionHelper(this, this);
         requestCode = 1;
-        mPermissionHelper.requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION});
+        mPermissionHelper.requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION});
         //初始化蓝牙
         for (int i = 0; i < beacon_number + 1; i++) {
             myIbeacon[i] = new Beacon("Beacon_999", "error", 1, -999, -59, -999, 9999);//第一个数组位置不用，从索引值为1开始
@@ -314,7 +328,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         if (rssi == 0) {
             return -1.0;
         }
-//45  0.2
         double absRssi = Math.abs(rssi);
         double power = (absRssi - 65) / (10 * 4.8);
         return Math.pow(10, power);
@@ -331,17 +344,33 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
      * 根据存储的Beacon值设置map中Beacon位置
      */
     private void initMap() {
-        conut_putted_beacons = 4;
-        SharedPreferences sp = getSharedPreferences(BEACON_DATA, MODE_PRIVATE);
-        map_x_1 = sp.getInt(BEACON_ONE_X, 100);
-        map_y_1 = sp.getInt(BEACON_ONE_Y, 100);
-        map_x_2 = sp.getInt(BEACON_TWO_X, 1000);
-        map_y_2 = sp.getInt(BEACON_TWO_Y, 100);
-        map_x_3 = sp.getInt(BEACON_THREE_X, 100);
-        map_y_3 = sp.getInt(BEACON_THREE_Y, 1000);
-        map_x_4 = sp.getInt(BEACON_FOUR_X, 1000);
-        map_y_4 = sp.getInt(BEACON_FOUR_Y, 1000);
-        put_beacon_and_user_on_map();
+        conut_putted_beacons =3;
+        SqlHelper mSqlHelper = new SqlHelper(this, "Beacon.db", null, 1);
+        SQLiteDatabase db = mSqlHelper.getWritableDatabase();
+        List<BeaconInfo> list = new ArrayList<>();
+        @SuppressLint("Recycle") Cursor cursor = db.query("Beacon", null, null, null, null, null, null);
+        if (cursor.moveToFirst()) {
+            do {
+                BeaconInfo beaconInfo = new BeaconInfo();
+                beaconInfo.setName(cursor.getString(cursor.getColumnIndex("name")));
+                beaconInfo.setUuid(cursor.getString(cursor.getColumnIndex("uuid")));
+                beaconInfo.setX(cursor.getDouble(cursor.getColumnIndex("x")));
+                beaconInfo.setY(cursor.getDouble(cursor.getColumnIndex("y")));
+                list.add(beaconInfo);
+            } while (cursor.moveToNext());
+        }
+        db.close();//数据库用完关闭
+        if (list.size() >= 3) {
+            map_x_1 = (float) list.get(0).getX();
+            map_y_1 = (float) list.get(0).getY();
+            map_x_2 = (float) list.get(1).getX();
+            map_y_2 = (float) list.get(1).getY();
+            map_x_3 = (float) list.get(2).getX();
+            map_y_3 = (float) list.get(2).getY();
+//            map_x_4 = (float) list.get(2).getX();
+//            map_y_4 = (float) list.get(2).getY();
+            put_beacon_and_user_on_map();
+        }
     }
 
     public void infinite_positioning() {
@@ -384,8 +413,8 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 for (int i = 1; i < 10; i++) {
                     if (totaltime[i] == 0) continue;
 //                    d[i] = d[i] / totaltime[i];     //简单求平均
-                    myIbeacon[i].set_dist(d[i]);
-                    Log.e("totaltime", "d[i]: "+d[i] );
+                    myIbeacon[i].set_dist(d[i]);       //实时算平均
+                    Log.e("totaltime", "d[i]: " + d[i]);
                 }
                 engine.start_positioning(myIbeacon);//运用定位算法求出主设备X，Y坐标
                 Log.v("=====>", "user_pos_x:" + engine.get_user_pos().get_x());
@@ -585,6 +614,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 draw_user(canvas);
             }
         }
+
     }
 
     public void assign_radius_and_set_circles(int conut) {
@@ -655,6 +685,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                     public void cancel() {
 
                     }
+
                 }).show();
             } else {
                 DialogUtil.showSelectDialog(MainActivity.this, "位置权限不可用", "请在-应用设置-权限中，允许APP使用位置权限", "取消", "立即开启", new DialogUtil.DialogClickListener() {
@@ -667,6 +698,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                     public void cancel() {
 
                     }
+
                 }).show();
             }
             //如果拒绝授予权限,且勾选了再也不提醒
@@ -685,6 +717,8 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                             public void cancel() {
 
                             }
+
+
                         }).show();
                     }
 
@@ -692,6 +726,8 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                     public void cancel() {
 
                     }
+
+
                 }).show();
             } else {
                 DialogUtil.showSelectDialog(MainActivity.this, "位置权限不可用", "请在-应用设置-权限中，允许APP使用位置权限", "取消", "立即开启", new DialogUtil.DialogClickListener() {
@@ -704,6 +740,51 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                     public void cancel() {
 
                     }
+
+
+                }).show();
+            }
+            //如果拒绝授予权限,且勾选了再也不提醒
+            if (!shouldShowRequestPermissionRationale(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                DialogUtil.showSelectDialog(this, "说明", "需要使用位置权限，进行蓝牙操作", "取消", "确定", new DialogUtil.DialogClickListener() {
+                    @Override
+                    public void confirm() {
+                        //用于在用户勾选“不再提示”并且拒绝时，再次提示用户
+                        DialogUtil.showSelectDialog(MainActivity.this, "位置权限不可用", "请在-应用设置-权限中，允许APP使用位置权限", "取消", "立即开启", new DialogUtil.DialogClickListener() {
+                            @Override
+                            public void confirm() {
+                                goToAppSetting();
+                            }
+
+                            @Override
+                            public void cancel() {
+
+                            }
+
+
+                        }).show();
+                    }
+
+                    @Override
+                    public void cancel() {
+
+                    }
+
+
+                }).show();
+            } else {
+                DialogUtil.showSelectDialog(MainActivity.this, "写入权限不可用", "请在-应用设置-权限中，允许APP使用位置权限", "取消", "立即开启", new DialogUtil.DialogClickListener() {
+                    @Override
+                    public void confirm() {
+                        goToAppSetting();
+                    }
+
+                    @Override
+                    public void cancel() {
+
+                    }
+
+
                 }).show();
             }
         }

@@ -2,4 +2,7 @@
 <resources>
     <string name="text_user_location">用户位置：</string>
     <string name="text_start_search">搜索设备</string>
+    <string name="setting_add">新增</string>
+    <string name="setting_delete">删除</string>
+    <string name="text_positive_button">确定</string>
 </resources>

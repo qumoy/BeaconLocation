@@ -1,5 +1,13 @@
 package com.beacon.location.Beans;
-
+/**
+ * Author Qumoy
+ * Create Date 2020/1/28
+ * Description：
+ * Modifier:
+ * Modify Date:
+ * Bugzilla Id:
+ * Modify Content:
+ */
 /**
  * 创建beacon数据项类
  */
