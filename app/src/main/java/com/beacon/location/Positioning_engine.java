@@ -19,6 +19,7 @@ public class Positioning_engine {
     private Beacon_circle circle_1;   //存储三条最短的距离的设备
     private Beacon_circle circle_2;
     private Beacon_circle circle_3;
+    private long distance=500000000;
     private Beacon_circle[] circles = new Beacon_circle[3];//三个Beacon
     Beacon_circle[] sorted_circle_first3 = new Beacon_circle[3];
     private Circle_intersection_pos sect_pos[] = new Circle_intersection_pos[6];    //存储三个最短路径圆的交点
@@ -27,6 +28,8 @@ public class Positioning_engine {
     private Cross_pos_and_dist[] pos_dist_combine = new Cross_pos_and_dist[15];
     private Cross_pos_and_dist[] nearest_combine = new Cross_pos_and_dist[3];
     private Circle_intersection_pos critical_cross_point[] = new Circle_intersection_pos[3];
+    private long minor=Long.parseLong("1579576807869");
+
 
 
     public void set_circles(Beacon_circle circle1, Beacon_circle circle2, Beacon_circle circle3) {
@@ -39,7 +42,7 @@ public class Positioning_engine {
         this.circles[0] = circle1;
         this.circles[1] = circle2;
         this.circles[2] = circle3;
-        this.circles[3] = circle4;
+//        this.circles[3] = circle4;//3个Beacon
     }
 
     public void start_positioning(Beacon[] ibeacon) {
@@ -81,7 +84,6 @@ public class Positioning_engine {
             } else if (circles[3].get_minor() == myIbeacon[i].get_minor()) {
                 circles[3].set_r(myIbeacon[i].get_dist());
                 Log.v("test", "circles[3].get_r() : " + circles[3].get_r());
-
             }
 
         }
@@ -293,7 +295,6 @@ public class Positioning_engine {
     }
 
     public void calc_where_is_user(Circle_intersection_pos[] A) {
-
         Log.v("test", "Start calc_where_is_user:");
         try {
             pos_user = new Circle_intersection_pos(((A[0].get_x() + A[1].get_x() + A[2].get_x()) / 3), ((A[0].get_y() + A[1].get_y() + A[2].get_y()) / 3));
@@ -310,7 +311,6 @@ public class Positioning_engine {
 
 
     public void beacon_circle_sort(Beacon_circle[] values) {
-
         double[] c = new double[3];//三个Beacon
         if (values == null || values.length == 0) {
             Log.v("=====>", "**************values为空******************");

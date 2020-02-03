@@ -2,12 +2,10 @@ package com.beacon.location.Activities;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Dialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Canvas;
@@ -19,7 +17,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.provider.Settings;
-
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -37,30 +34,20 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.beacon.location.Beans.Beacon;
 import com.beacon.location.Adapters.BeaconViewAdapter;
+import com.beacon.location.Beans.Beacon;
 import com.beacon.location.Beans.BeaconInfo;
 import com.beacon.location.Beans.Beacon_circle;
 import com.beacon.location.Dbs.SqlHelper;
+import com.beacon.location.Positioning_engine;
+import com.beacon.location.R;
 import com.beacon.location.Utils.DialogUtil;
 import com.beacon.location.Utils.PermissionHelper;
 import com.beacon.location.Utils.PermissionInterface;
-import com.beacon.location.R;
-import com.beacon.location.Positioning_engine;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
-
-import static com.beacon.location.Activities.SettingActivity.BEACON_DATA;
-import static com.beacon.location.Activities.SettingActivity.BEACON_FOUR_X;
-import static com.beacon.location.Activities.SettingActivity.BEACON_FOUR_Y;
-import static com.beacon.location.Activities.SettingActivity.BEACON_ONE_X;
-import static com.beacon.location.Activities.SettingActivity.BEACON_ONE_Y;
-import static com.beacon.location.Activities.SettingActivity.BEACON_THREE_X;
-import static com.beacon.location.Activities.SettingActivity.BEACON_THREE_Y;
-import static com.beacon.location.Activities.SettingActivity.BEACON_TWO_X;
-import static com.beacon.location.Activities.SettingActivity.BEACON_TWO_Y;
 
 /**
  * Author Qumoy
@@ -247,6 +234,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             major = (scanRecord[startByte + 20] & 0xff) * 0x100 + (scanRecord[startByte + 21] & 0xff);
             int result = (scanRecord[27 + 1] & 0xff) + (scanRecord[27] & 0xff) * 256;
             Log.e("test", "result: " + result);
+            //Minor设置
             if (result == 481 || result == 482 || result == 483) {
                 minor = (scanRecord[27 + 1] & 0xff) + (scanRecord[27] & 0xff) * 256 - 480;//事先设备分别设为1,2,3,4,5
                 get_uuid = uuid;
@@ -344,7 +332,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
      * 根据存储的Beacon值设置map中Beacon位置
      */
     private void initMap() {
-        conut_putted_beacons =3;
+        conut_putted_beacons = 3;
         SqlHelper mSqlHelper = new SqlHelper(this, "Beacon.db", null, 1);
         SQLiteDatabase db = mSqlHelper.getWritableDatabase();
         List<BeaconInfo> list = new ArrayList<>();
@@ -384,10 +372,16 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 next_positioning = false;
 
                 //线程开启
-                mThread = new HandlerThread("find_beacons");
-                mThread.start();
-                mThreadHandler = new Handler(mThread.getLooper());   //跳转另一个线程
-                mThreadHandler.post(get_user_pos);
+                if (mThread == null && mThreadHandler == null) {
+                    mThread = new HandlerThread("find_beacons");
+                    mThread.start();
+                    mThreadHandler = new Handler(mThread.getLooper());   //跳转另一个线程
+                    mThreadHandler.post(get_user_pos);
+                } else {
+                    assert mThread != null;
+                    mThreadHandler = new Handler(mThread.getLooper());   //跳转另一个线程
+                    mThreadHandler.post(get_user_pos);
+                }
             }
         }
     }
@@ -432,27 +426,27 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 Toast.makeText(getApplicationContext(), "beacon少于3个!", Toast.LENGTH_SHORT).show();
             }
 //            循环定位
-//            next_positioning = true;//为下次一开始扫描初始化
-//            stop_positioning = false;
-//            for (int i = 0; i < 5; i++) {
-//                if (i == 0) {
-//                    d[i] = 999;
-//                    totaltime[i] = 999;
-//                } else {
-//                    d[i] = 0;
-//                    totaltime[i] = 0;
-//                }
-//            }
-//            for (int i = 0; i < 5; i++) {
-//
-//                if (i == 0) {
-//                    totaltime[i] = 999;
-//                } else {
-//                    totaltime[i] = 0;
-//                }
-//            }
-//            infinite_positioning();
-//            Log.v("=====>", "**************************标志位重置进行下一次扫描");
+            next_positioning = true;//为下次一开始扫描初始化
+            stop_positioning = false;
+            for (int i = 0; i < 5; i++) {
+                if (i == 0) {
+                    d[i] = 999;
+                    totaltime[i] = 999;
+                } else {
+                    d[i] = 0;
+                    totaltime[i] = 0;
+                }
+            }
+            for (int i = 0; i < 5; i++) {
+
+                if (i == 0) {
+                    totaltime[i] = 999;
+                } else {
+                    totaltime[i] = 0;
+                }
+            }
+            infinite_positioning();
+            Log.v("=====>", "**************************标志位重置进行下一次扫描");
 
         });
     };
@@ -559,13 +553,16 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     public void put_beacon_and_user_on_map() {
         Log.v("=====>", "Start put_beacon_and_user_on_map");
 
-        view = new DrawView(this);
-        view.setMinimumHeight(1000);
-        view.setMinimumWidth(1000);
+        if (view == null) {
+            view = new DrawView(this);
+            view.setMinimumHeight(1000);
+            view.setMinimumWidth(1000);
+            view.invalidate();//此方法是在iu线程中使用，实现界面刷新。
+            llLayout.addView(view, 0);
+        } else {
+            view.invalidate();
+        }
 
-        view.invalidate();//此方法是在iu线程中使用，实现界面刷新。
-        //view.postInvalidate();
-        llLayout.addView(view, 0);
     }
 
 

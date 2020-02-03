@@ -31,7 +31,6 @@ import butterknife.ButterKnife;
 public class BeaconLocationViewAdapter extends RecyclerView.Adapter<BeaconLocationViewAdapter.BeaconViewHolder> {
 
 
-
     private List<BeaconInfo> mBeaconList;
     public void setBeaconList(List<BeaconInfo> mBeaconList) {
         this.mBeaconList = mBeaconList;

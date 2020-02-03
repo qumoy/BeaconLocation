@@ -79,7 +79,6 @@ public class SettingActivity extends AppCompatActivity {
         mBeaconList = queryBeaconDb();
         mAdapter = new BeaconLocationViewAdapter(mBeaconList);
         mAdapter.setOnItemClickListener(pos -> {
-
             showDialog("是否要清除该条数据?", pos);
         });
         mRc.setAdapter(mAdapter);
@@ -109,18 +108,18 @@ public class SettingActivity extends AppCompatActivity {
                     switch (id) {
                         case R.id.ed_beacon_name:
                             mBeaconName = s;
-                            Toast.makeText(SettingActivity.this, s, Toast.LENGTH_SHORT).show();
+//                            Toast.makeText(SettingActivity.this, s, Toast.LENGTH_SHORT).show();
                             break;
                         case R.id.ed_beacon_x:
                             if (!TextUtils.isEmpty(s)) {
                                 mBeaconX = Double.parseDouble(s);
-                                Toast.makeText(SettingActivity.this, s, Toast.LENGTH_SHORT).show();
+//                                Toast.makeText(SettingActivity.this, s, Toast.LENGTH_SHORT).show();
                             }
                             break;
                         case R.id.ed_beacon_y:
                             if (!TextUtils.isEmpty(s)) {
                                 mBeaconY = Double.parseDouble(s);
-                                Toast.makeText(SettingActivity.this, s, Toast.LENGTH_SHORT).show();
+//                                Toast.makeText(SettingActivity.this, s, Toast.LENGTH_SHORT).show();
                             }
                             break;
                     }
@@ -219,22 +218,13 @@ public class SettingActivity extends AppCompatActivity {
     public void showDialog(String title, int pos) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(title)
-                .setNegativeButton(getResources().getString(R.string.text_positive_button), new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int i) {
-                        dialog.dismiss();
-                    }
-                })
-                .setPositiveButton(getResources().getString(R.string.text_positive_button), new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-//                        mBeaconNameDelete = mBeaconList.get(pos).getName();
-                        deleteBeaconDb(mBeaconList.get(pos).getName());
-                        mBeaconList.remove(pos);
-                        mAdapter.setBeaconList(mBeaconList);
-                        mAdapter.notifyDataSetChanged();
-                        dialog.dismiss();
-                    }
+                .setNegativeButton(getResources().getString(R.string.text_negative_button), (dialog, i) -> dialog.dismiss())
+                .setPositiveButton(getResources().getString(R.string.text_positive_button), (dialog, which) -> {
+                    deleteBeaconDb(mBeaconList.get(pos).getName());
+                    mBeaconList.remove(pos);
+                    mAdapter.setBeaconList(mBeaconList);
+                    mAdapter.notifyDataSetChanged();
+                    dialog.dismiss();
                 });
         AlertDialog dialog = builder.create();
         dialog.show();
