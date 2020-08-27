@@ -33,12 +33,14 @@
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal">
+
         <Button
             android:id="@+id/btn_search"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/text_start_search" />
+
         <Button
             android:id="@+id/btn_position"
             android:layout_width="0dp"
@@ -52,6 +54,13 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/text_clear_map" />
+
+        <Button
+            android:id="@+id/btn_excel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/text_write_excel" />
     </LinearLayout>
 
 </LinearLayout>

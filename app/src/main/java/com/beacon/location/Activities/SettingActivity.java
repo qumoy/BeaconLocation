@@ -19,6 +19,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -71,7 +72,10 @@ public class SettingActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_setting);
         ButterKnife.bind(this);
-
+        //新增回退按钮
+        ActionBar actionBar = getSupportActionBar();
+        assert actionBar != null;
+        actionBar.setDisplayHomeAsUpEnabled(true);
         //初始化数据库
         mSqlHelper = new SqlHelper(this, "Beacon.db", null, 1);
         //初始化RecyclerView
@@ -153,6 +157,11 @@ public class SettingActivity extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(), "请选中要删除的Beacon信息", Toast.LENGTH_SHORT).show();
             }
         }
+        //回退响应
+        if (id == android.R.id.home) {
+            finish();
+            return true;
+        }
         return super.onOptionsItemSelected(item);
     }
 
@@ -229,4 +238,6 @@ public class SettingActivity extends AppCompatActivity {
         AlertDialog dialog = builder.create();
         dialog.show();
     }
+
+
 }

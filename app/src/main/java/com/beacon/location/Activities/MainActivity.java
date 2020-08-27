@@ -3,6 +3,7 @@ package com.beacon.location.Activities;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
@@ -14,6 +15,7 @@ import android.graphics.Paint;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.provider.Settings;
@@ -36,15 +38,19 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.beacon.location.Adapters.BeaconViewAdapter;
 import com.beacon.location.Beans.Beacon;
+import com.beacon.location.Beans.BeaconData;
 import com.beacon.location.Beans.BeaconInfo;
 import com.beacon.location.Beans.Beacon_circle;
 import com.beacon.location.Dbs.SqlHelper;
 import com.beacon.location.Positioning_engine;
 import com.beacon.location.R;
+import com.beacon.location.Utils.DateUtil;
 import com.beacon.location.Utils.DialogUtil;
+import com.beacon.location.Utils.ExcelUtil;
 import com.beacon.location.Utils.PermissionHelper;
 import com.beacon.location.Utils.PermissionInterface;
 
+import java.io.File;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -98,6 +104,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private Button btn_get_serarch;
     private Button btn_get_position;
     private Button btn_reset;
+    private Button btn_excel;
     private boolean stop_positioning = true;
     private boolean next_positioning = true;
     private double[] d = new double[5];
@@ -110,7 +117,8 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private RecyclerView mRc;
     private List<Beacon> mBeaconList = new ArrayList<>();
     private BeaconViewAdapter mBeaconViewAdapter;
-
+    private ArrayList<BeaconData> beaconList = new ArrayList<>();
+    private boolean isWriteExcel = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -131,6 +139,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         btn_get_serarch = findViewById(R.id.btn_search);  //搜索设备
         btn_get_position = findViewById(R.id.btn_position);  //获取位置
         btn_reset = findViewById(R.id.btn_reset); //复位
+        btn_excel = findViewById(R.id.btn_excel); //复位
         mRc = findViewById(R.id.rc);
 
         //注册监听器
@@ -138,6 +147,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         btn_get_serarch.setOnClickListener(this);
         btn_get_position.setOnClickListener(this);
         btn_reset.setOnClickListener(this);
+        btn_excel.setOnClickListener(this);
 
         initRecyclerView();
 
@@ -203,6 +213,10 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
      * 扫描设备回调函数  device为扫描结果  Major表示不同区域   Minor表示不同的设备  这里Minor设置为1 2 3 4 5  将从设备属性存入myIbeacon
      */
     private BluetoothAdapter.LeScanCallback mLeScanCallback = (device, rssi, scanRecord) -> {
+        //采集数据
+        if (isWriteExcel) {
+            BeanconDataCollection(device, rssi, scanRecord);
+        }
         //String deviceName=device.getName();    获取从设备硬件名字
         // String deviceAddr = device.getAddress();   获取从设备的MAC地址   //连接从设备
         Log.v("=====>", "Start OnLeScan");
@@ -218,6 +232,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             startByte++;
         }
         Log.v("=====>", " device.getName():" + device.getName());
+
         if (patternFound) {
             //把id转换为16进制数据
             byte[] uuidBytes = new byte[16];
@@ -235,11 +250,11 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             int result = (scanRecord[27 + 1] & 0xff) + (scanRecord[27] & 0xff) * 256;
             Log.e("test", "result: " + result);
             //Minor设置
-            if (result == 481 || result == 482 || result == 483) {
-                minor = (scanRecord[27 + 1] & 0xff) + (scanRecord[27] & 0xff) * 256 - 480;//事先设备分别设为1,2,3,4,5
+            if (result == 436 || result == 437 || result == 438) {
+                minor = (scanRecord[27 + 1] & 0xff) + (scanRecord[27] & 0xff) * 256 - 435;//事先设备分别设为1,2,3,4,5
                 get_uuid = uuid;
                 get_rssi = rssi;
-                dist = calculateAccuracy(txPower, get_rssi);
+                dist = calculateAccuracy(get_rssi);
                 Log.e("test", "minor:" + minor + "   dist: " + dist);
                 myIbeacon[minor] = new Beacon("Beacon_" + minor, uuid, major, minor, txPower, rssi, dist);  //给每个蓝牙设备赋值
                 if (!deviceInfoExists("Beacon_" + minor)) {
@@ -262,6 +277,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
         }
     };
+
 
     private Beacon findBeaconInfo(int minor) {
         for (int i = 0; i < mBeaconList.size(); i++) {
@@ -312,7 +328,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
      * @param rssi
      * @return 主设备与从设备之间的距离dist
      */
-    protected static double calculateAccuracy(int txPower, double rssi) {
+    protected static double calculateAccuracy(double rssi) {
         if (rssi == 0) {
             return -1.0;
         }
@@ -494,9 +510,9 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
      * 屏幕按钮事件*/
     @Override
     public void onClick(View view) {
-
         switch (view.getId()) {
             case R.id.btn_search:
+                isWriteExcel = true;
                 find_beacon();   //寻找设备存入myIbeacon[minor]；
                 Toast.makeText(MainActivity.this, "正在搜索设备", Toast.LENGTH_SHORT).show();
                 break;
@@ -514,8 +530,47 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 Toast.makeText(this, "已清除", Toast.LENGTH_SHORT).show();
                 //复位。。。。
                 break;
-
+            case R.id.btn_excel:
+                isWriteExcel = false;
+                Log.e("test2", "beaconList.size(): " + beaconList.size());
+                if (beaconList.size() != 0) {
+                    new Thread(this::WriteIntoExcel).start();
+                }
+                break;
         }
+    }
+
+    /**
+     * 本地EXCEL保存数据
+     */
+
+
+    private void BeanconDataCollection(BluetoothDevice device, int rssi, byte[] scanRecord) {
+        Log.e("test2", "BeanconDataCollection: " + device.getAddress());
+        int minor = (scanRecord[27 + 1] & 0xff) + (scanRecord[27] & 0xff) * 256;
+        beaconList.add(new BeaconData(String.valueOf(minor), rssi));
+    }
+
+    private void WriteIntoExcel() {
+
+        String filePath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/com.Beacon.Location";
+        File file = new File(filePath);
+        if (!file.exists()) {
+            file.mkdirs();
+        }
+
+        String data = DateUtil.stampToDate(System.currentTimeMillis());
+        String excelFileName = "/" + data + "-BeaconData.xls";
+//        String excelFileName = "/BeaconData3.xls";
+
+        String[] title = {"DeviceName", "Rssi"};
+
+        filePath = filePath + excelFileName;
+
+        ExcelUtil.initExcel(filePath, title);
+
+        ExcelUtil.writeObjListToExcel(beaconList, filePath, getApplicationContext());
+
     }
 
     /**

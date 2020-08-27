@@ -1,7 +1,6 @@
 package com.beacon.location;
 
 
-import android.os.SystemClock;
 import android.util.Log;
 
 import com.beacon.location.Beans.Beacon;
